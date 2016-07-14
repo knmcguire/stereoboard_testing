@@ -1,0 +1,24 @@
+# C
+*.o
+*/*.bin
+*.elf
+*.a
+q
+
+# Python
+*.pyc
+
+
+.settings
+.cproject
+.project
+stereoboard/.settings
+stereoboard/Default
+.metadata
+
+*.*~
+*/*.*~
+*/*/*.*~
+
+EL
+*.d
