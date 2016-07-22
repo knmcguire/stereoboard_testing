@@ -22,3 +22,5 @@ stereoboard/Default
 
 EL
 *.d
+
+*.csv
