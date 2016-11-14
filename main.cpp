@@ -31,10 +31,10 @@ int main(int argc, const char **argv)
 {
 
 	// initialize structures for plotting
-	Gnuplot g1("lines");
+/*	Gnuplot g1("lines");
 	Gnuplot g2("lines");
 	Gnuplot g3;
-	Gnuplot g4;
+	Gnuplot g4;*/
 
 	//parameters for edgeflow
 	struct edgeflow_parameters_t edgeflow_parameters;
@@ -90,8 +90,10 @@ int main(int argc, const char **argv)
 			image_left_gray = image(ROI_left);
 			image_right_gray = image(ROI_right);
 		}
-
-		// Put image values in array, just like in the stereoboard
+	   // namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
+	    //imshow( "Display window", image_left_gray );
+	    //waitKey(0);
+	    // Put image values in array, just like in the stereoboard
 		int x, y, idx,idx2;
 		for (y = 0; y < image.rows; y++) {
 			for (x = 0; x < image.cols; x++)
@@ -115,7 +117,7 @@ int main(int argc, const char **argv)
 		edgeflow_total(edgeflowArray, stereocam_data, 0, image_buffer,
 				&edgeflow_parameters, &edgeflow_results);
 		std::vector<double> X ;
-		std::vector<double> Y1, Y2, Y3, Y4;
+		/*std::vector<double> Y1, Y2, Y3, Y4;
 		for(x=0;x<128;x++)
 		{
 			X.push_back((double)x);
@@ -142,7 +144,7 @@ int main(int argc, const char **argv)
 		{
 			g1.remove_tmpfiles();
 			g2.remove_tmpfiles();
-		}
+		}*/
 
 
 		//Save data on output.cvs
