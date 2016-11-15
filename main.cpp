@@ -29,6 +29,8 @@ Gnuplot g("lines");
 struct edgeflow_parameters_t edgeflow_parameters;
 struct edgeflow_results_t edgeflow_results;
 
+#define SHOW_IMAGE false
+#define SHOW_PLOT false
 
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title);
@@ -94,9 +96,12 @@ int main()
       image_left_gray = image(ROI_left);
       image_right_gray = image(ROI_right);
     }
-    // namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-    // imshow( "Display window", image_left_gray );
-    // waitKey(0);
+
+#if SHOW_IMAGE
+     namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
+     imshow( "Display window", image_left_gray );
+     waitKey(0);
+#endif
 
     // Put image values in array, just like in the stereoboard
     int x, y, idx, idx2;
@@ -120,11 +125,13 @@ int main()
                    &edgeflow_parameters, &edgeflow_results);
 
     // Plot results
+#if SHOW_PLOT
     plot_gnu(edgeflow_results.displacement.x, 128, &g, true, "displacement.x");
     double A = (double)edgeflow_results.edge_flow.div_x / 100;
     double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
     plot_line_gnu(A, B, 128, &g, false, "edgeflow");
     getchar();
+#endif
 
     //Save data on output.cvs
     //TODO: also enter groundtruth data

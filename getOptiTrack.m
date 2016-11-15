@@ -1,13 +1,13 @@
-function [cam_Vx_frame, cam_Vz_frame, yaw_frame, t_frame] = getOptiTrack(track,database_loc)
+function [cam_Vx_frame, cam_Vz_frame, yaw_frame, t_frame] = getOptiTrack(database_loc)
 
 % keyboard
 
 %% load image timing data
 
-time=fopen([database_loc num2str(track) '/timing.dat']);
+time=fopen([database_loc '/timing.dat']);
 
 
-    tline = fgets(time);
+tline = fgets(time);
 
 tims=textscan(time,'%f	%f');
 
@@ -21,16 +21,15 @@ t_frame = [];
 
 for i =1:length(check_image)
     if check_image(i) == 1
-t_frame=[t_frame;t_frame_uncheck(i)];
+        t_frame=[t_frame;t_frame_uncheck(i)];
     end
-% keyboard
 end
 % remove either first or last timestamp to match number of images
-% t_frame = t_frame(1:end-1);
+
 
 
 %% load optitrack data
-position=fopen([database_loc num2str(track) '/position.dat']);
+position=fopen([database_loc  '/position.dat']);
 
 tline = fgets(time);
 
@@ -84,24 +83,11 @@ cam_Vz_frame = cam_Vz(index_frame); % longitudinal velocity (positive is forward
 cam_X = X.*cos(yaw*pi/180)-Z.*sin(yaw*pi/180);
 cam_Z = Z.*cos(yaw*pi/180)+X.*sin(yaw*pi/180);
 
-% cam_X_obst = X_obst.*cos(yaw*pi/180)-Z_obst.*sin(yaw*pi/180);
-% cam_Z_obst = -Z_obst.*cos(yaw*pi/180)-X_obst.*sin(yaw*pi/180);
-
-% cam_X_obst_frame = cam_X_obst(index_frame);
-% cam_Z_obst_frame = cam_Z_obst(index_frame);
 
 cam_X_frame = cam_X(index_frame);
 cam_Z_frame = cam_Z(index_frame);
- yaw_frame = yaw(index_frame);
- 
- yaw_rate_frame = [diff(yaw_frame);0];
- 
-% figure(1)
-% subplot(3,1,1)
-% plot(cam_Vz_frame(10:end))
-% subplot(3,1,2)
-% plot(cam_Vx_frame(10:end))
-% subplot(3,1,3)
-% plot(yaw_rate_frame)
+yaw_frame = yaw(index_frame);
+
+yaw_rate_frame = [diff(yaw_frame);0];
 
 time = t_frame;
