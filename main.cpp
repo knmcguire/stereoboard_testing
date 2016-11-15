@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 //Include header file of stereoboard code
-#include "../stereoboard/edgeflow.h"
+#include "../../stereoboard/edgeflow.h"
 #include "gnuplot_i.hpp"
 
 using namespace std;

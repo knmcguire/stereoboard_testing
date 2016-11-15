@@ -7,8 +7,8 @@
 CC            = gcc
 CXX           = g++ 
 DEFINES	      = -DCOMPILE_ON_LINUX
-CFLAGS        = -pipe -g -Wall -W $(DEFINES) $(shell pkg-config --cflags opencv)
-CXXFLAGS      = -pipe -g -Wall -W $(DEFINES) -MMD -std=c++11 
+CFLAGS        = -pipe -g -Wall -W $(DEFINES) $(shell pkg-config --cflags opencv) -fpermissive
+CXXFLAGS      = -pipe -g -Wall -W $(DEFINES) -MMD -std=c++11 -fpermissive
 CXXFLAGS      += $(shell pkg-config --cflags opencv)
 LINK          = g++
 LFLAGS        = $(shell pkg-config --libs opencv)
@@ -21,10 +21,13 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-TARGET  = EL
+TARGET  = testing
+
+COMMONLIB_PATH    = ../../common
+CXXFLAGS  += -I${COMMONLIB_PATH}
 
 SOURCES =   main.cpp \
-            ../stereoboard/edgeflow.c
+            ../../stereoboard/edgeflow.c
 
 $(info $(SOURCES))
 
@@ -62,7 +65,11 @@ $(TARGET):  $(OBJECTS)
 	$(LINK) $(LIBS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LFLAGS)
 	{ test -n "$(DESTDIR)" && DESTDIR="$(DESTDIR)" || DESTDIR=.; } && test $$(gdb --version | sed -e 's,[^0-9]\+\([0-9]\)\.\([0-9]\).*,\1\2,;q') -gt 72 && gdb --nx --batch --quiet -ex 'set confirm off' -ex "save gdb-index $$DESTDIR" -ex quit '$(TARGET)' && test -f $(TARGET).gdb-index && objcopy --add-section '.gdb_index=$(TARGET).gdb-index' --set-section-flags '.gdb_index=readonly' '$(TARGET)' '$(TARGET)' && rm -f $(TARGET).gdb-index || true
 
-clean:
+debug:
+	gdb $(TARGET)
+  
+clean: 
+	$(MAKE) -C ../../stereoboard clean
 	$(DEL_FILE) $(wildcard *.o) $(wildcard *.d) $(TARGET)
 
 ####### Compile
