@@ -1,1 +1,1 @@
-stereo_shift -5
+-5

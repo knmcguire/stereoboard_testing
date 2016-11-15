@@ -22,6 +22,12 @@ const int8_t FOVY = 79;    // 45deg = 0.785 rad
 #define FOVX 104
 #define FOVY 79
 
+// initialize structures for plotting (can be multiple if you want)
+Gnuplot g("lines");
+
+//parameters for edgeflow
+struct edgeflow_parameters_t edgeflow_parameters;
+struct edgeflow_results_t edgeflow_results;
 
 
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
@@ -29,42 +35,44 @@ void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string ti
 
 int main()
 {
+// SELECT WHICH DATABASE YOU WANT:
+//TODO: make this variables for the main function
 
-  // initialize structures for plottin
-  Gnuplot g("lines");
-  //parameters for edgeflow
-  struct edgeflow_parameters_t edgeflow_parameters;
-  struct edgeflow_results_t edgeflow_results;
-  int32_t edge_histogram_x[IMAGE_WIDTH];
-  //initialize for edgeflow
-  edgeflow_init(&edgeflow_parameters, &edgeflow_results, FOVX, FOVY, 128, 96, 0);
+  string configuration_board = "forward_camera";
+  int number_stereoboard = 1;
+  int number_take = 16;
+  //
 
-  char name[10];
-  int i = 1;
+  // Find Directories
+  stringstream file_directory_images;
+  stringstream file_directory_calibration;
+  stringstream file_directory_results;
 
-  //structures for images
+  file_directory_images << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
+                        configuration_board << "/take" << number_take << "/%1d.bmp";
+  file_directory_calibration << "stereoboard_database/database_stereoboard_" << number_stereoboard <<
+                             "/calibration_data.txt";
+  file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
+                         configuration_board << "/take" << number_take << "/result_stereo.csv";
+
+  //Open files needed for testing
+  VideoCapture cap; cap.open(file_directory_images.str()); 		//image location
+  ofstream output; output.open(file_directory_results.str()); 	// result file
+  fstream calibration_file(file_directory_calibration.str(), ios_base::in);
+  calibration_file >> edgeflow_parameters.stereo_shift; // calibration data of that file
+
+
+  //OPENCV structures to read out images
   Rect ROI_right(0, 0, 128, 94); //Note that in the database, image left and right is reverted!
   Rect ROI_left(128, 0, 128, 94);
   Mat image_left, image_left_gray;
   Mat image_right, image_right_gray;
   Mat image;
   uint8_t image_buffer[128 * 96 * 2];
-  uint8_t image_buffer_left[128 * 96 ];
-  uint8_t image_buffer_right[128 * 96 ];
-
   memset(image_buffer, 0, 128 * 96 * 2 * sizeof(uint8_t));
 
-  // open cvs file
-  ofstream output;
-  // open video capture
-  VideoCapture cap;
-  cap.open("stereoboard_database/Take16/%1d.bmp");
-  output.open("stereoboard_database/Take16/result.csv");
-  edgeflow_parameters.stereo_shift = -5; // calibration data of that file
-
-  /*  cap.open("stereoboard_database/Track3/%1d.bmp");
-  output.open("stereoboard_database/Track3/result.csv");
-  edgeflow_parameters.stereo_shift = 2;*/
+  //initialize for edgeflow
+  edgeflow_init(&edgeflow_parameters, &edgeflow_results, FOVX, FOVY, 128, 96, 0);
 
   //start loop while images are read
   int counter = 0;
@@ -87,8 +95,9 @@ int main()
       image_right_gray = image(ROI_right);
     }
     // namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-    //imshow( "Display window", image_left_gray );
-    //waitKey(0);
+    // imshow( "Display window", image_left_gray );
+    // waitKey(0);
+
     // Put image values in array, just like in the stereoboard
     int x, y, idx, idx2;
     for (y = 0; y < image.rows; y++) {
@@ -97,8 +106,6 @@ int main()
         idx2 = (128 * y + x);
 
         //TODO: this should be the right order?
-        image_buffer_left[idx2] = (uint8_t)image_left_gray.at<uchar>(y, x);
-        image_buffer_right[idx2] = (uint8_t)image_right_gray.at<uchar>(y, x);
         image_buffer[idx] = (uint8_t)image_left_gray.at<uchar>(y, x);
         image_buffer[idx + 1] = (uint8_t)image_right_gray.at<uchar>(y, x);
       }
@@ -115,7 +122,7 @@ int main()
     // Plot results
     plot_gnu(edgeflow_results.displacement.x, 128, &g, true, "displacement.x");
     double A = (double)edgeflow_results.edge_flow.div_x / 100;
-    double B = (double)(edgeflow_results.edge_flow.flow_x + edgeflow_results.edge_flow.div_x * (128 / 2)) / 100;
+    double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
     plot_line_gnu(A, B, 128, &g, false, "edgeflow");
     getchar();
 
@@ -132,6 +139,7 @@ int main()
 
   return 0;
 }
+
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title)
 {
   static int plot_counter = 0;
