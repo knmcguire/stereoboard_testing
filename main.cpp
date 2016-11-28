@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 //Include header file of stereoboard code
-#include "../../stereoboard/edgeflow.h"
+#include "../stereoboard/edgeflow.h"
 #include "gnuplot_i.hpp"
 
 using namespace std;
@@ -24,13 +24,14 @@ const int8_t FOVY = 79;    // 45deg = 0.785 rad
 
 // initialize structures for plotting (can be multiple if you want)
 Gnuplot g("lines");
+Gnuplot g2("lines");
 
 //parameters for edgeflow
 struct edgeflow_parameters_t edgeflow_parameters;
 struct edgeflow_results_t edgeflow_results;
 
-#define SHOW_IMAGE false
-#define SHOW_PLOT false
+#define SHOW_IMAGE true
+#define SHOW_PLOT true
 
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title);
@@ -42,7 +43,7 @@ int main()
 
   string configuration_board = "forward_camera";
   int number_stereoboard = 1;
-  int number_take = 16;
+  int number_take = 1;
   //
 
   // Find Directories
@@ -97,11 +98,7 @@ int main()
       image_right_gray = image(ROI_right);
     }
 
-#if SHOW_IMAGE
-     namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-     imshow( "Display window", image_left_gray );
-     waitKey(0);
-#endif
+
 
     // Put image values in array, just like in the stereoboard
     int x, y, idx, idx2;
@@ -130,9 +127,20 @@ int main()
     double A = (double)edgeflow_results.edge_flow.div_x / 100;
     double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
     plot_line_gnu(A, B, 128, &g, false, "edgeflow");
+#if !SHOW_IMAGE
     getchar();
 #endif
+#endif
 
+#if SHOW_IMAGE
+     namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
+     imshow( "Display window", image_left_gray );
+     waitKey(0);
+#endif
+
+     plot_gnu((int32_t*)edgeflow_results.obstacle_detect, Gnuplot &g2, false, 'obstacledetect');
+
+cout<<"distance closest object"<<edgeflow_results.distance_closest_obstacle<<endl;
     //Save data on output.cvs
     //TODO: also enter groundtruth data
     output << (int)edgeflow_results.vel_x_pixelwise << "," << (int)edgeflow_results.vel_z_pixelwise <<

@@ -27,7 +27,7 @@ COMMONLIB_PATH    = ../../common
 CXXFLAGS  += -I${COMMONLIB_PATH}
 
 SOURCES =   main.cpp \
-            ../../stereoboard/edgeflow.c
+            ../stereoboard/edgeflow.c
 
 $(info $(SOURCES))
 
@@ -69,7 +69,7 @@ debug:
 	gdb $(TARGET)
   
 clean: 
-	$(MAKE) -C ../../stereoboard clean
+	$(MAKE) -C ../stereoboard clean
 	$(DEL_FILE) $(wildcard *.o) $(wildcard *.d) $(TARGET)
 
 ####### Compile
