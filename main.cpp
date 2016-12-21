@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 //Include header file of stereoboard code
-#include "../stereoboard/edgeflow.h"
+#include "../../stereoboard/edgeflow.h"
 #include "gnuplot_i.hpp"
 
 using namespace std;
@@ -19,8 +19,8 @@ const int8_t FOVX = 104;   // 60deg = 1.04 rad
 const int8_t FOVY = 79;    // 45deg = 0.785 rad
  */
 
-#define FOVX 104
-#define FOVY 79
+#define FOVX 1.001819   // 57.4deg = 1.001819 rad
+#define FOVY 0.776672   // 44.5deg = 0.776672 rad
 
 // initialize structures for plotting (can be multiple if you want)
 Gnuplot g("lines");
@@ -30,8 +30,8 @@ Gnuplot g2("lines");
 struct edgeflow_parameters_t edgeflow_parameters;
 struct edgeflow_results_t edgeflow_results;
 
-#define SHOW_IMAGE true
-#define SHOW_PLOT true
+#define SHOW_IMAGE false
+#define SHOW_PLOT false
 
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title);
@@ -43,7 +43,7 @@ int main()
 
   string configuration_board = "forward_camera";
   int number_stereoboard = 1;
-  int number_take = 1;
+  int number_take = 4;
   //
 
   // Find Directories
@@ -58,12 +58,17 @@ int main()
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                          configuration_board << "/take" << number_take << "/result_stereo.csv";
 
+
+  edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
+
   //Open files needed for testing
   VideoCapture cap; cap.open(file_directory_images.str()); 		//image location
   ofstream output; output.open(file_directory_results.str()); 	// result file
   fstream calibration_file(file_directory_calibration.str(), ios_base::in);
   calibration_file >> edgeflow_parameters.stereo_shift; // calibration data of that file
-
+  //initialize for edgeflow
+  edgeflow_parameters.fovx = (int32_t)(FOVX * edgeflow_parameters.RES);
+  edgeflow_parameters.fovy = (int32_t)(FOVY * edgeflow_parameters.RES);
 
   //OPENCV structures to read out images
   Rect ROI_right(0, 0, 128, 94); //Note that in the database, image left and right is reverted!
@@ -74,8 +79,7 @@ int main()
   uint8_t image_buffer[128 * 96 * 2];
   memset(image_buffer, 0, 128 * 96 * 2 * sizeof(uint8_t));
 
-  //initialize for edgeflow
-  edgeflow_init(&edgeflow_parameters, &edgeflow_results, FOVX, FOVY, 128, 96, 0);
+
 
   //start loop while images are read
   int counter = 0;
@@ -123,10 +127,13 @@ int main()
 
     // Plot results
 #if SHOW_PLOT
-    plot_gnu(edgeflow_results.displacement.x, 128, &g, true, "displacement.x");
-    double A = (double)edgeflow_results.edge_flow.div_x / 100;
-    double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
-    plot_line_gnu(A, B, 128, &g, false, "edgeflow");
+    plot_gnu(edgeflow_results.edge_hist[edgeflow_results.current_frame_nr].stereo, 128, &g, true, "displacement.x");
+    plot_gnu(edgeflow_results.edge_hist[edgeflow_results.current_frame_nr].x, 128, &g, false, "displacement.x");
+    plot_gnu(edgeflow_results.stereo_distance_per_column, 128, &g2, false, "displacement.x");
+
+    //    double A = (double)edgeflow_results.edge_flow.div_x / 100;
+//    double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
+//    plot_line_gnu(A, B, 128, &g, false, "edgeflow");
 #if !SHOW_IMAGE
     getchar();
 #endif
@@ -138,7 +145,6 @@ int main()
      waitKey(0);
 #endif
 
-     plot_gnu((int32_t*)edgeflow_results.obstacle_detect, Gnuplot &g2, false, 'obstacledetect');
 
 cout<<"distance closest object"<<edgeflow_results.distance_closest_obstacle<<endl;
     //Save data on output.cvs
