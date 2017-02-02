@@ -24,10 +24,14 @@ OBJECTS_DIR   = ./
 TARGET  = testing
 
 COMMONLIB_PATH    = ../../common
-CXXFLAGS  += -I${COMMONLIB_PATH}
+CV_PATH        = ../drone_vision/cv
+
+CXXFLAGS  += -I${COMMONLIB_PATH} -I${CV_PATH}
 
 SOURCES =   main.cpp \
             ../../stereoboard/edgeflow.c
+            
+SOURCES += $(CV_PATH)/image.c $(CV_PATH)/encoding/jpeg.c
 
 $(info $(SOURCES))
 
