@@ -62,8 +62,8 @@ int main()
   edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
 
   //Open files needed for testing
-  VideoCapture cap; cap.open(file_directory_images.str()); 		//image location
-  ofstream output; output.open(file_directory_results.str()); 	// result file
+  VideoCapture cap; cap.open(file_directory_images.str());    //image location
+  ofstream output; output.open(file_directory_results.str());   // result file
   fstream calibration_file(file_directory_calibration.str(), ios_base::in);
   calibration_file >> edgeflow_parameters.stereo_shift; // calibration data of that file
   //initialize for edgeflow
@@ -127,33 +127,40 @@ int main()
 
     // Plot results
 #if SHOW_PLOT
-    plot_gnu(edgeflow_results.edge_hist[edgeflow_results.current_frame_nr].stereo, 128, &g, true, "displacement.x");
-    plot_gnu(edgeflow_results.edge_hist[edgeflow_results.current_frame_nr].x, 128, &g, false, "displacement.x");
-    plot_gnu(edgeflow_results.stereo_distance_per_column, 128, &g2, false, "displacement.x");
-
-    //    double A = (double)edgeflow_results.edge_flow.div_x / 100;
-//    double B = (double)(edgeflow_results.edge_flow.flow_x + (double)edgeflow_results.edge_flow.div_x * (-128 / 2)) / 100;
-//    plot_line_gnu(A, B, 128, &g, false, "edgeflow");
+    plot_gnu(edgeflow_results.displacement.stereo, 128, &g, true, "displacement.stereo");
+    plot_gnu(edgeflow_results.displacement.x, 128, &g, false, "displacement.x");
+    plot_gnu(edgeflow_results.edge_hist[edgeflow_results.current_frame_nr].x, 128, &g, true, "edgehist");
+    plot_gnu(edgeflow_results.edge_hist_right, 128, &g2, false, "edgehist_right");
 #if !SHOW_IMAGE
     getchar();
 #endif
 #endif
 
 #if SHOW_IMAGE
-     namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-     imshow( "Display window", image_left_gray );
-     waitKey(0);
+    namedWindow("Display window", WINDOW_AUTOSIZE);  // Create a window for display.
+    imshow("Display window", image_left_gray);
+    waitKey(0);
 #endif
 
+    //calculate mean displacement
+    int mean_disp_x_temp = 0;
+    int mean_disp_stereo_temp = 0;
 
-cout<<"distance closest object"<<edgeflow_results.distance_closest_obstacle<<endl;
+    for (x = 0; x < 128; x++) {
+      mean_disp_x_temp += edgeflow_results.displacement.x[x];
+      mean_disp_stereo_temp += edgeflow_results.displacement.stereo[x];
+    }
+    int mean_disp_x = 100 * mean_disp_x_temp / 128;
+    int mean_disp_stereo = 100 * mean_disp_stereo_temp / 128;
+
+
     //Save data on output.cvs
     //TODO: also enter groundtruth data
     output << (int)edgeflow_results.vel_x_pixelwise << "," << (int)edgeflow_results.vel_z_pixelwise <<
            ", " << (int)edgeflow_results.vel_x_global << "," << (int)edgeflow_results.vel_y_global <<
            "," << (int)edgeflow_results.vel_z_global << "," << (int)edgeflow_results.velocity_stereo_mean <<
            "," << (int)edgeflow_results.vel_x_stereo_avoid_pixelwise << "," << (int)edgeflow_results.vel_z_stereo_avoid_pixelwise
-           << ", " << (int)edgeflow_results.avg_dist << endl;
+           << ", " << (int)edgeflow_results.avg_dist << ", " << mean_disp_x << ", " << mean_disp_stereo << endl;
   }
 
   output.close();
