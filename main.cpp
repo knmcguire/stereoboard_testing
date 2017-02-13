@@ -144,21 +144,24 @@ int main()
 
     //calculate mean displacement
     int mean_disp_x_temp = 0;
-    int mean_disp_stereo_temp = 0;
+    int mean_disp_stereo_temp = 0, mean_disp_stereo_count = 0;
 
     for (x = 0; x < 128; x++) {
       mean_disp_x_temp += edgeflow_results.displacement.x[x];
-      mean_disp_stereo_temp += edgeflow_results.displacement.stereo[x];
+      if(edgeflow_results.displacement.stereo[x] != 0){
+        mean_disp_stereo_temp += edgeflow_results.displacement.stereo[x];
+        mean_disp_stereo_count++;
+      }
     }
     int mean_disp_x = 100 * mean_disp_x_temp / 128;
-    int mean_disp_stereo = 100 * mean_disp_stereo_temp / 128;
+    int mean_disp_stereo = 100 * mean_disp_stereo_temp / mean_disp_stereo_count;
 
 
     //Save data on output.cvs
     //TODO: also enter groundtruth data
     output << (int)edgeflow_results.vel_x_pixelwise << "," << (int)edgeflow_results.vel_z_pixelwise <<
            ", " << (int)edgeflow_results.vel_x_global << "," << (int)edgeflow_results.vel_y_global <<
-           "," << (int)edgeflow_results.vel_z_global << "," << (int)edgeflow_results.velocity_stereo_mean <<
+           "," << (int)edgeflow_results.vel_z_global << "," << (int)edgeflow_results.vel_stereo_mean <<
            "," << (int)edgeflow_results.vel_x_stereo_avoid_pixelwise << "," << (int)edgeflow_results.vel_z_stereo_avoid_pixelwise
            << ", " << (int)edgeflow_results.avg_dist << ", " << mean_disp_x << ", " << mean_disp_stereo << endl;
   }
