@@ -43,7 +43,7 @@ int main()
 
   string configuration_board = "forward_camera";
   int number_stereoboard = 1;
-  int number_take = 4;
+  int number_take = 16;
   //
 
   // Find Directories
@@ -158,7 +158,7 @@ int main()
     //TODO: also enter groundtruth data
     output << (int)edgeflow_results.vel_x_pixelwise << "," << (int)edgeflow_results.vel_z_pixelwise <<
            ", " << (int)edgeflow_results.vel_x_global << "," << (int)edgeflow_results.vel_y_global <<
-           "," << (int)edgeflow_results.vel_z_global << "," << (int)edgeflow_results.velocity_stereo_mean <<
+           "," << (int)edgeflow_results.vel_z_global << ", 1" <<
            "," << (int)edgeflow_results.vel_x_stereo_avoid_pixelwise << "," << (int)edgeflow_results.vel_z_stereo_avoid_pixelwise
            << ", " << (int)edgeflow_results.avg_dist << ", " << mean_disp_x << ", " << mean_disp_stereo << endl;
   }

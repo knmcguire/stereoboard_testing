@@ -1,11 +1,11 @@
-function testing_stereoboard(stereoboard_type, configuration, take_nr)
+%function testing_stereoboard(stereoboard_type, configuration, take_nr)
 % for example testing_stereoboard(1,'forward_camera', 16)
 
 
 % load camera data
 dir = ['stereoboard_database/database_stereoboard_',num2str(stereoboard_type),'/',configuration,'/take',num2str(take_nr)];
 cam_file = fopen([dir,'/result_stereo.csv']);
-cam = textscan(cam_file,'%f,%f,%f,%f,%f,%f,%f,%f,%f');
+cam = textscan(cam_file,'%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f');
 fclose(cam_file);
 
 x_pixelwise_stereo = cam{1}/100.;
