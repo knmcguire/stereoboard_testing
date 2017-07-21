@@ -15,6 +15,10 @@ LFLAGS        = $(shell pkg-config --libs opencv)
 LIBS          = $(SUBLIBS) -lrt -pthread -lopencv_core -lopencv_highgui -lopencv_imgproc
 DEL_FILE      = rm -f
 
+CV_PATH		  = ../drone_vision/cv
+INC_PATH	  = -I../../common -I../../stereoboard -I../../stereoboard/drivers/inc
+CXXFLAGS	  +=-I${CV_PATH} ${INC_PATH}
+
 ####### Output directory
 
 OBJECTS_DIR   = ./
@@ -23,15 +27,14 @@ OBJECTS_DIR   = ./
 
 TARGET  = testing
 
-COMMONLIB_PATH    = ../../common
-CV_PATH        = ../drone_vision/cv
+SOURCES = ../drone_vision/cv/image.c
 
-CXXFLAGS  += -I${COMMONLIB_PATH} -I${CV_PATH}
-
-SOURCES =   main.cpp \
-            ../../stereoboard/edgeflow.c
+SOURCES +=   door_detection.cpp \
+            ../../stereoboard/gate_detection.c \
+            ../../stereoboard/stereo_image.c
             
-SOURCES += $(CV_PATH)/image.c $(CV_PATH)/encoding/jpeg.c
+            
+#SOURCES += $(CV_PATH)/image.c $(CV_PATH)/encoding/jpeg.c
 
 $(info $(SOURCES))
 
