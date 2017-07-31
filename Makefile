@@ -7,6 +7,7 @@
 CC            = gcc
 CXX           = g++ 
 DEFINES	      = -DCOMPILE_ON_LINUX
+DEFINES	      += -DGATE_DETECTION_GRAPHICS=1 -DGATE_ROTATE=1 -DGATE_SHAPE=6 -DGATE_NSAMPLES=1500
 CFLAGS        = -pipe -g -Wall -W $(DEFINES) $(shell pkg-config --cflags opencv) -fpermissive
 CXXFLAGS      = -pipe -g -Wall -W $(DEFINES) -MMD -std=c++11 -fpermissive
 CXXFLAGS      += $(shell pkg-config --cflags opencv)

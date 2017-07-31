@@ -11,6 +11,8 @@
 #include "../../stereoboard/main_parameters.h"
 #include "gnuplot_i.hpp"
 
+#include "image.h"
+
 using namespace std;
 using namespace cv;
 
@@ -25,8 +27,26 @@ const int8_t FOVY = 79;    // 45deg = 0.785 rad
 uint32_t frame_time = 0;
 float time_inc = 0;
 
+#include "../../stereoboard/gate_detection.h"
+
+uint16_t bin_cnt[3] = {0};
+uint16_t bin_cnt_snake[3] = {0};
+struct point_t roi[2];
+
+struct gate_t gate;
+
 int main(int argc, const char **argv)
 {
+  roi[0].x = 0;// (IMAGE_WIDTH - cal_width) / 2;
+  roi[0].y = 0;//(IMAGE_HEIGHT - cal_height) / 2;
+  roi[1].x = IMAGE_WIDTH;//(IMAGE_WIDTH + cal_width) / 2;
+  // if we only want to look at possible floor points that are more than 7 meters away
+  // we can exclude some of the points in the bottom of the frame
+  // namely 16 deg of the FOV resulting in only looking at the top 62 pixels
+  roi[1].y = 62;//(IMAGE_HEIGHT+cal_height)/2;
+
+  gate_set_intensity(50, 255); // nus meeting room
+
   Gnuplot g1("lines");
   Gnuplot g2("lines");
   Gnuplot g3("lines");
@@ -37,17 +57,18 @@ int main(int argc, const char **argv)
 	int i = 1;
 
 	//structures for images
-	Rect ROI_right(0, 0, 128, 94); //Note that in the database, image left and right is reversed!
-	Rect ROI_left(128, 0, 128, 94);
-	Mat image_left_gray;
-	Mat image_right_gray;
-	Mat image;
-	uint8_t image_buffer[128 * 94 * 2];
-	uint8_t image_buffer_left[128 * 94 ];
-	uint8_t image_buffer_right[128 * 94 ];
+	Mat image_l;
+	Mat image_r;
+	Mat grad(96, 128, CV_8UC1, Scalar(0,0,0));
+	Mat grad_big(384, 512, CV_8UC1, Scalar(0,0,0));
+	uint8_t image_buffer[128 * 96 * 2] = {0};
+	uint8_t image_buffer_left[128 * 96] = {0};
+	uint8_t image_buffer_right[128 * 96] = {0};
+	uint8_t image_grad[128 * 96] = {0};
 
 	// open video capture
-	VideoCapture cap("/home/kirk/mavlab/SmartUAV/MATLAB/DelFlyInvestigator/rooms_dataset/singapore_rooms/left%d.png");
+	VideoCapture cap_l("/home/kirk/mavlab/SmartUAV/MATLAB/DelFlyInvestigator/rooms_dataset/singapore_rooms/left%d.png");
+	VideoCapture cap_r("/home/kirk/mavlab/SmartUAV/MATLAB/DelFlyInvestigator/rooms_dataset/singapore_rooms/right%d.png");
 	time_inc = 1/7.;
 
 /*	VideoCapture cap("stereoboard_database/Track3/%d.bmp");
@@ -58,49 +79,50 @@ int main(int argc, const char **argv)
   Mat prev_image;
   char prev_image_file[255];
 
-	if (!cap.isOpened()) return -1;
+	if (!cap_l.isOpened() || !cap_r.isOpened()) return -1;
 
 	//start loop while images are read
 	int counter = 0;
 	for(;;) {
 		counter++;
-		cap >> image;
+		cap_l >> image_l;
+		cap_r >> image_r;
 
-		if (image.empty()) {
+		if (image_l.empty() || image_r.empty()) {
 			break;
 		}
 
-		namedWindow( "image", WINDOW_AUTOSIZE );// Create a window for display.
-    imshow( "image", image );                   // Show our image inside it.
-    waitKey(1);
+		// Crop out the separate left and right images
+    if (image_l.channels() == 3) {
+      cvtColor(image_l, image_l, COLOR_BGR2GRAY);
+      cvtColor(image_r, image_r, COLOR_BGR2GRAY);
+    }
 
-		// Crop out the seperate left and right images
-		if (image.channels() == 3) {
-			cvtColor(image(ROI_left), image_left_gray, COLOR_BGR2GRAY);
-			cvtColor(image(ROI_right), image_right_gray, COLOR_BGR2GRAY);
-		} else {
-			image_left_gray = image(ROI_left);
-			image_right_gray = image(ROI_right);
-		}
+    resize(image_l, image_l, Size(), 0.5, 0.5);
+    resize(image_r, image_r, Size(), 0.5, 0.5);
+
+		namedWindow( "image", WINDOW_AUTOSIZE );// Create a window for display.
+    imshow( "image", image_r );                   // Show our image inside it.
+    //waitKey(1);
 
 		// Put image values in array, just like in the stereoboard
 		int x, y, idx,idx2;
-		for (y = 0; y < image_left_gray.rows; y++) {
-			for (x = 0; x < image_left_gray.cols; x++)
+		for (y = 0; y < image_l.rows; y++) {
+			for (x = 0; x < image_l.cols; x++)
 			{
-				idx2 = image_left_gray.cols * y + x;
+				idx2 = image_l.cols * y + x;
 
-				image_buffer_left[idx2] = (uint8_t)image_left_gray.at<uchar>(y, x);
-				image_buffer_right[idx2] = (uint8_t)image_right_gray.at<uchar>(y, x);
+				image_buffer_left[idx2] = (uint8_t)image_l.at<uchar>(y, x);
+				image_buffer_right[idx2] = (uint8_t)image_r.at<uchar>(y, x);
 
 #if (CAMERA_CPLD_STEREO == camera_cpld_stereo_pixmux)
-        idx = 2 * (image_left_gray.cols * y + x);
-        image_buffer[idx] = (uint8_t)image_left_gray.at<uchar>(y, x);
-        image_buffer[idx + 1] = (uint8_t)image_right_gray.at<uchar>(y, x);
+        idx = 2 * (image_l.cols * y + x);
+        image_buffer[idx] = (uint8_t)image_l.at<uchar>(y, x);
+        image_buffer[idx + 1] = (uint8_t)image_r.at<uchar>(y, x);
 #elif (CAMERA_CPLD_STEREO == camera_cpld_stereo_linemux)
-        idx = 2 * image_left_gray.cols * y + x;
-        image_buffer[idx] = (uint8_t)image_left_gray.at<uchar>(y, x);
-        image_buffer[idx + image_left_gray.cols] = (uint8_t)image_right_gray.at<uchar>(y, x);
+        idx = 2 * image_l.cols * y + x;
+        image_buffer[idx] = (uint8_t)image_l.at<uchar>(y, x);
+        image_buffer[idx + image_l.cols] = (uint8_t)image_r.at<uchar>(y, x);
 #endif
 			}
 		}
@@ -116,6 +138,49 @@ int main(int argc, const char **argv)
 		std::vector<double> Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, prev_hist, curr_hist, right_hist, dist_hist;
 
     printf("frame: %d\n", counter);
+
+    struct image_t input;
+    input.buf = image_buffer_left;
+    input.w = IMAGE_WIDTH;
+    input.h = IMAGE_HEIGHT;
+    input.buf_size = IMAGE_WIDTH*IMAGE_HEIGHT;
+    input.type = IMAGE_GRAYSCALE;
+
+    struct image_t d;
+    d.buf = image_grad;
+    d.w = IMAGE_WIDTH;
+    d.h = IMAGE_HEIGHT;
+    d.buf_size = IMAGE_WIDTH*IMAGE_HEIGHT;
+    d.type = IMAGE_GRAYSCALE;
+
+    image_2d_gradients(&input, &d);
+    //image_2d_sobel(&input, &d);
+
+    for (int y = 0; y < image_l.rows; y++) {
+      for (int x = 0; x < image_l.cols; x++) {
+        grad.at<uchar>(y, x) = ((uint8_t*)d.buf)[x + y*image_l.cols];
+      }
+    }
+
+    resize(grad, grad_big, Size(), 4, 4);
+    namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
+    imshow( "before", grad_big );                   // Show our image inside it.
+
+    memset(bin_cnt_snake, 0, sizeof(bin_cnt));  // reset the counters
+    snake_gate_detection(&d, &gate, false, bin_cnt_snake, NULL, NULL);
+
+    printf("gate %d (%d,%d) %d %d %d\n", gate.q, gate.x, gate.y, gate.sz, gate.n_sides, gate.rot);
+
+    for (int y = 0; y < image_l.rows; y++) {
+      for (int x = 0; x < image_l.cols; x++) {
+        grad.at<uchar>(y, x) = ((uint8_t*)d.buf)[x + y*image_l.cols];
+      }
+    }
+
+    resize(grad, grad_big, Size(), 4, 4);
+    namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
+    imshow( "after", grad_big );                   // Show our image inside it.
+    waitKey(1);
 
 		for(x=0; x < 128; x++)
 		{
