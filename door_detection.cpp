@@ -35,6 +35,10 @@ struct point_t roi[2];
 
 struct gate_t gate;
 
+bool make_movie = true;
+const string video_name = "./door_video.avi";
+
+uint32_t positive = 0;
 int main(int argc, const char **argv)
 {
   roi[0].x = 0;// (IMAGE_WIDTH - cal_width) / 2;
@@ -81,12 +85,30 @@ int main(int argc, const char **argv)
 
 	if (!cap_l.isOpened() || !cap_r.isOpened()) return -1;
 
-	//start loop while images are read
 	int counter = 0;
+
+	cap_l >> image_l;
+  cap_r >> image_r;
+  counter++;
+
+  VideoWriter outputVideo;                                        // Open the output
+  if(make_movie){
+    int codec = CV_FOURCC('M', 'J', 'P', 'G');  // select desired codec (must be available at runtime)
+    outputVideo.open(video_name, codec, 8., image_l.size(), false);
+
+    // check if we succeeded
+    if (!outputVideo.isOpened()) {
+        cerr << "Could not open the output video file for write\n";
+        return -1;
+    }
+  }
+
+
+	//start loop while images are read
 	for(;;) {
-		counter++;
-		cap_l >> image_l;
-		cap_r >> image_r;
+    counter++;
+    cap_l >> image_l;
+    cap_r >> image_r;
 
 		if (image_l.empty() || image_r.empty()) {
 			break;
@@ -98,11 +120,13 @@ int main(int argc, const char **argv)
       cvtColor(image_r, image_r, COLOR_BGR2GRAY);
     }
 
+    namedWindow( "image", WINDOW_AUTOSIZE );// Create a window for display.
+    imshow( "image", image_r );                   // Show our image inside it.
+
     resize(image_l, image_l, Size(), 0.5, 0.5);
     resize(image_r, image_r, Size(), 0.5, 0.5);
 
-		namedWindow( "image", WINDOW_AUTOSIZE );// Create a window for display.
-    imshow( "image", image_r );                   // Show our image inside it.
+
     //waitKey(1);
 
 		// Put image values in array, just like in the stereoboard
@@ -162,12 +186,25 @@ int main(int argc, const char **argv)
       }
     }
 
-    resize(grad, grad_big, Size(), 4, 4);
+    resize(grad, grad_big, Size(), 2, 2);
     namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
     imshow( "before", grad_big );                   // Show our image inside it.
 
     memset(bin_cnt_snake, 0, sizeof(bin_cnt));  // reset the counters
     snake_gate_detection(&d, &gate, false, bin_cnt_snake, NULL, NULL);
+
+    struct point_t roi[2];
+    roi[0].x = gate.x-gate.sz; roi[0].y = gate.y-gate.sz_left;
+	  roi[1].x = gate.x+gate.sz; roi[1].y = gate.y+gate.sz_left;
+    uint32_t avg = image_roi_mean(&d, roi);
+
+    if (gate.q > 15){// && avg > 22){
+      positive++;
+      struct point_t center = {.x = 64, .y = 48};
+      uint8_t color[3] = {255, 255, 255};
+      //image_draw_circle(&d, &center, 10, color);
+    }
+    printf("avg = %d\n", avg);
 
     printf("gate %d (%d,%d) %d %d %d\n", gate.q, gate.x, gate.y, gate.sz, gate.n_sides, gate.rot);
 
@@ -177,10 +214,16 @@ int main(int argc, const char **argv)
       }
     }
 
-    resize(grad, grad_big, Size(), 4, 4);
+    resize(grad, grad_big, Size(), 2, 2);
     namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
     imshow( "after", grad_big );                   // Show our image inside it.
     waitKey(1);
+
+    if (make_movie){
+      // encode the frame into the videofile stream
+      outputVideo.write(grad_big);
+    }
+
 
 		for(x=0; x < 128; x++)
 		{
@@ -249,8 +292,9 @@ int main(int argc, const char **argv)
 		g4.reset_plot();
 		g5.reset_plot();*/
 
-		std::cin.get();
+		//std::cin.get();
 	}
+	printf("%d positivly identified doors\n", positive);
 
 	return 0;
 }
