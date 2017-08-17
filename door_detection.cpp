@@ -38,20 +38,13 @@ int main(int argc, const char **argv)
 
   gate_set_intensity(50, 255); // nus meeting room
 
-  Gnuplot g1("lines");
-  Gnuplot g2("lines");
-  Gnuplot g3("lines");
-  Gnuplot g4("lines");
-  Gnuplot g5("lines");
-
-	char name[10];
-	int i = 1;
-
 	//structures for images
 	Mat image_l;
+	Mat image_l_big;
 	Mat image_r;
 	Mat grad(96, 128, CV_8UC1, Scalar(0,0,0));
 	Mat grad_big(384, 512, CV_8UC1, Scalar(0,0,0));
+	Mat vid_frame(384, 1024, CV_8UC1, Scalar(0,0,0));
 	uint8_t image_buffer[128 * 96 * 2] = {0};
 	uint8_t image_buffer_left[128 * 96] = {0};
 	uint8_t image_buffer_right[128 * 96] = {0};
@@ -75,7 +68,7 @@ int main(int argc, const char **argv)
   VideoWriter outputVideo;                                        // Open the output
   if(make_movie){
     int codec = CV_FOURCC('M', 'J', 'P', 'G');  // select desired codec (must be available at runtime)
-    outputVideo.open(video_name, codec, 8., image_l.size(), false);
+    outputVideo.open(video_name, codec, 6., vid_frame.size(), false);
 
     // check if we succeeded
     if (!outputVideo.isOpened()) {
@@ -151,7 +144,7 @@ int main(int argc, const char **argv)
       }
     }
 
-    resize(grad, grad_big, Size(), 2, 2);
+    resize(grad, grad_big, Size(), 4, 4);
     namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
     imshow( "before", grad_big );                   // Show our image inside it.
 
@@ -162,14 +155,14 @@ int main(int argc, const char **argv)
     roi[0].x = gate.x-gate.sz; roi[0].y = gate.y-gate.sz_left;
 	  roi[1].x = gate.x+gate.sz; roi[1].y = gate.y+gate.sz_left;
     uint32_t avg = image_roi_mean(&d, roi);
+    printf("avg = %d\n", avg);
 
-    if (gate.q > 15){// && avg > 22){
+/*    if (gate.q > 15){// && avg > 22){
       positive++;
       struct point_t center = {.x = 64, .y = 48};
       uint8_t color[3] = {255, 255, 255};
       //image_draw_circle(&d, &center, 10, color);
-    }
-    printf("avg = %d\n", avg);
+    }*/
 
     printf("gate %d (%d,%d) %d %d %d\n", gate.q, gate.x, gate.y, gate.sz, gate.n_sides, gate.rot);
 
@@ -179,14 +172,23 @@ int main(int argc, const char **argv)
       }
     }
 
-    resize(grad, grad_big, Size(), 2, 2);
+    resize(grad, grad_big, Size(), 4, 4);
     namedWindow( "image", WINDOW_AUTOSIZE );      // Create a window for display.
     imshow( "after", grad_big );                   // Show our image inside it.
+
+    resize(image_l, image_l_big, Size(), 4, 4);
+    for (int y = 0; y < grad_big.rows; y++) {
+      for (int x = 0; x < grad_big.cols; x++) {
+        vid_frame.at<uchar>(y, x) = image_l_big.at<uchar>(y,x);
+        vid_frame.at<uchar>(y, x + grad_big.cols) = grad_big.at<uchar>(y,x);
+      }
+    }
+
     waitKey(1);
 
     if (make_movie){
       // encode the frame into the videofile stream
-      outputVideo.write(grad_big);
+      outputVideo.write(vid_frame);
     }
 
 		//std::cin.get();
