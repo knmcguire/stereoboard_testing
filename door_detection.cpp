@@ -25,7 +25,7 @@ struct gate_t gate;
 bool make_movie = true;
 const string video_name = "./door_video.avi";
 
-uint32_t positive = 0;
+uint32_t positive = 0, negative = 0;
 int main(int argc, const char **argv)
 {
   roi[0].x = 0;// (IMAGE_WIDTH - cal_width) / 2;
@@ -101,25 +101,44 @@ int main(int argc, const char **argv)
 
 		// Put image values in array, just like in the stereoboard
 		int x, y, idx,idx2;
-		for (y = 0; y < image_l.rows; y++) {
-			for (x = 0; x < image_l.cols; x++)
-			{
-				idx2 = image_l.cols * y + x;
 
-				image_buffer_left[idx2] = (uint8_t)image_l.at<uchar>(y, x);
-				image_buffer_right[idx2] = (uint8_t)image_r.at<uchar>(y, x);
+    for (y = 0; y < image_l.rows; y++) {
+      for (x = 1; x < image_l.cols; x++)  //stored images have coloums shifted by one, first coloum is actually last coloum
+      {
+        idx2 = image_l.cols * y + x - 1;
+
+        image_buffer_left[idx2] = (uint8_t)image_l.at<uchar>(y, x);
+        image_buffer_right[idx2] = (uint8_t)image_r.at<uchar>(y, x);
 
 #if (CAMERA_CPLD_STEREO == camera_cpld_stereo_pixmux)
-        idx = 2 * (image_l.cols * y + x);
+        idx = 2 * (image_l.cols * y + x - 1);
         image_buffer[idx] = (uint8_t)image_l.at<uchar>(y, x);
         image_buffer[idx + 1] = (uint8_t)image_r.at<uchar>(y, x);
 #elif (CAMERA_CPLD_STEREO == camera_cpld_stereo_linemux)
-        idx = 2 * image_l.cols * y + x;
+        idx = 2 * image_l.cols * y + x - 1;
         image_buffer[idx] = (uint8_t)image_l.at<uchar>(y, x);
         image_buffer[idx + image_l.cols] = (uint8_t)image_r.at<uchar>(y, x);
 #endif
-			}
-		}
+      }
+    }
+
+    // fill first colomn
+    for (y = 0; y < image_l.rows; y++)
+    {
+      idx2 = image_l.cols * y + image_l.cols - 1;
+      image_buffer_left[idx2] = (uint8_t)image_l.at<uchar>(y+1, 0);
+      image_buffer_right[idx2] = (uint8_t)image_r.at<uchar>(y+1, 0);
+
+#if (CAMERA_CPLD_STEREO == camera_cpld_stereo_pixmux)
+      idx = 2 * (image_l.cols * y + x);
+      image_buffer[idx] = (uint8_t)image_l.at<uchar>(y+1, 0);
+      image_buffer[idx + 1] = (uint8_t)image_r.at<uchar>(y+1, 0);
+#elif (CAMERA_CPLD_STEREO == camera_cpld_stereo_linemux)
+      idx = 2 * image_l.cols * y + x;
+      image_buffer[idx] = (uint8_t)image_l.at<uchar>(y+1, 0);
+      image_buffer[idx + image_l.cols] = (uint8_t)image_r.at<uchar>(y+1, 0);
+#endif
+    }
 
     struct image_t input;
     input.buf = image_buffer_left;
@@ -154,16 +173,8 @@ int main(int argc, const char **argv)
     struct point_t roi[2];
     roi[0].x = gate.x-gate.sz; roi[0].y = gate.y-gate.sz_left;
 	  roi[1].x = gate.x+gate.sz; roi[1].y = gate.y+gate.sz_left;
-    uint32_t avg = image_roi_mean(&d, roi);
-    printf("avg = %d\n", avg);
-
-/*    if (gate.q > 15){// && avg > 22){
-      positive++;
-      struct point_t center = {.x = 64, .y = 48};
-      uint8_t color[3] = {255, 255, 255};
-      //image_draw_circle(&d, &center, 10, color);
-    }*/
-
+    //uint32_t avg = image_roi_mean(&d, roi);
+    //printf("avg = %d\n", avg);
     printf("gate %d (%d,%d) %d %d %d\n", gate.q, gate.x, gate.y, gate.sz, gate.n_sides, gate.rot);
 
     for (int y = 0; y < image_l.rows; y++) {
@@ -191,9 +202,17 @@ int main(int argc, const char **argv)
       outputVideo.write(vid_frame);
     }
 
-		//std::cin.get();
+    /*if (gate.q > 15){
+      char key = std::cin.get();
+      printf("%d\n", key);
+      if (key == 49){
+        positive++;
+      } else if(key == 48){
+        negative++;
+      }
+	  }*/
 	}
-	printf("%d positivly identified doors\n", positive);
+	printf("%d positivly identified doors. %d negative\n", positive, negative);
 
 	return 0;
 }
