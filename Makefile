@@ -2,6 +2,8 @@
 # Makefile for building: Evolutionary Learning
 #############################################################################
 
+PROJECT      ?= edgeflow
+
 ####### Compiler, tools and options
 
 CC            = gcc
@@ -15,6 +17,10 @@ LFLAGS        = $(shell pkg-config --libs opencv)
 LIBS          = $(SUBLIBS) -lrt -pthread -lopencv_core -lopencv_highgui -lopencv_imgproc
 DEL_FILE      = rm -f
 
+CV_PATH		  = ../drone_vision/cv
+INC_PATH	  = -I../../common -I../../stereoboard -I../../stereoboard/drivers/inc -I../../stereoboard/math
+CXXFLAGS	  +=-I${CV_PATH} ${INC_PATH}
+
 ####### Output directory
 
 OBJECTS_DIR   = ./
@@ -23,15 +29,19 @@ OBJECTS_DIR   = ./
 
 TARGET  = testing
 
-COMMONLIB_PATH    = ../../common
-CV_PATH        = ../drone_vision/cv
+SOURCES = $(CV_PATH)/image.c $(wildcard ../../stereoboard/math/*.c)
 
-CXXFLAGS  += -I${COMMONLIB_PATH} -I${CV_PATH}
-
-SOURCES =   main.cpp \
-            ../../stereoboard/edgeflow.c
+ifeq ($(PROJECT), gate)
+	SOURCES += door_detection.cpp \
+            ../../stereoboard/gate_detection.c \
+            ../../stereoboard/stereo_image.c
             
-SOURCES += $(CV_PATH)/image.c $(CV_PATH)/encoding/jpeg.c
+    DEFINES += -DGATE_DETECTION_GRAPHICS=1 -DGATE_ROTATE=1 -DGATE_SHAPE=6 -DGATE_NSAMPLES=1500
+else
+    SOURCES += main.cpp \
+            ../../stereoboard/edgeflow.c \
+            $(CV_PATH)/encoding/jpeg.c
+endif
 
 $(info $(SOURCES))
 
