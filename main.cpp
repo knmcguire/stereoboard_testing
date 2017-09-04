@@ -42,7 +42,7 @@ int main()
 
   string configuration_board = "forward_camera";
   int number_stereoboard = 1;
-  int number_take = 16;	// 3
+  int number_take = 3;	// 3
   float time_inc = 1/7.; // 1/8
 
   uint32_t frame_time = 0;
@@ -59,9 +59,9 @@ int main()
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                          configuration_board << "/take" << number_take << "/result_stereo.csv";
 
-
+  struct cam_state_t cam_state;
   //initialize for edgeflow
-  edgeflow_init(128, 94, 0);
+  edgeflow_init(128, 94, 0,&cam_state);
 
   //Open files needed for testing
   VideoCapture cap; cap.open(file_directory_images.str());    //image location
@@ -134,7 +134,7 @@ int main()
 
     //calculate edgeflow
     frame_time += (uint32_t)(time_inc * 1e6);
-    edgeflow_total(image_buffer, frame_time, stereocam_data, 0);
+    edgeflow_total(image_buffer, frame_time);
 
     // Plot results
 #if SHOW_PLOT
