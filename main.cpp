@@ -14,11 +14,6 @@ using namespace std;
 using namespace cv;
 
 
-/*
-const int8_t FOVX = 104;   // 60deg = 1.04 rad
-const int8_t FOVY = 79;    // 45deg = 0.785 rad
- */
-
 #define FOVX 1.001819   // 57.4deg = 1.001819 rad
 #define FOVY 0.776672   // 44.5deg = 0.776672 rad
 
@@ -35,16 +30,25 @@ Gnuplot g5("lines");
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title);
 
-int main()
+int main(int argc, char* argv[])
 {
-// SELECT WHICH DATABASE YOU WANT:
-//TODO: make this variables for the main function
 
-  string configuration_board = "forward_camera";
-  int number_stereoboard = 1;
-  int number_take = 16;
+	//check if too many arguments are passed
+	if(argc !=3)
+	{
+		cout<<"Wrong amount of arguments!"<<endl;
+		cout<<"Usage: ./testing 'stereoboard_nr' 'take_nr'"<<endl;
+		cout<<"Example: ./testing 1 16"<<endl;
 
-  uint32_t frame_time = 0;
+        return 0;
+	}
+	cout<<"stereoboard "<<argv[1]<< " with take "<<argv[2]<<endl;
+
+	string configuration_board = "forward_camera";
+	int number_stereoboard = atoi(argv[1]);
+	int number_take = atoi(argv[2]);
+
+	uint32_t frame_time = 0;
 
   // Find Directories
   stringstream file_directory_images;
@@ -61,7 +65,7 @@ int main()
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                          configuration_board << "/take" << number_take << "/result_stereo.csv";
 
-  struct cam_state_t cam_state;
+  struct cam_state_t cam_state = {NULL};
   //initialize for edgeflow
   edgeflow_init(128, 94, 0,&cam_state);
 
