@@ -42,18 +42,20 @@ int main()
 
   string configuration_board = "forward_camera";
   int number_stereoboard = 1;
-  int number_take = 3;	// 3
-  float time_inc = 1/7.; // 1/8
+  int number_take = 16;
 
   uint32_t frame_time = 0;
 
   // Find Directories
   stringstream file_directory_images;
+  stringstream file_directory_timing;
   stringstream file_directory_calibration;
   stringstream file_directory_results;
 
   file_directory_images << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                         configuration_board << "/take" << number_take << "/%1d.bmp";
+  file_directory_timing << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
+                         configuration_board << "/take" << number_take << "/timing.dat";
   file_directory_calibration << "stereoboard_database/database_stereoboard_" << number_stereoboard <<
                              "/calibration_data.txt";
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
@@ -68,6 +70,19 @@ int main()
   ofstream output; output.open(file_directory_results.str());   // result file
   fstream calibration_file(file_directory_calibration.str(), ios_base::in);
   calibration_file >> edgeflow_params.stereo_shift; // calibration data of that file
+  fstream timing_file(file_directory_timing.str(), ios_base::in);
+
+  //Make vector with timing data
+  double num;
+  string temp_str;
+  vector<double> timing;
+  while(timing_file>>temp_str){
+	  num = (double)atof(temp_str.c_str());
+	  if(num!=1.0)
+	  {
+		  timing.push_back(num);
+	  }
+  }
 
   //OPENCV structures to read out images
   Rect ROI_right(0, 0, 128, 94); //Note that in the database, image left and right is reverted!
@@ -132,8 +147,9 @@ int main()
     int16_t *stereocam_data;
     uint8_t *edgeflowArray;
 
+
     //calculate edgeflow
-    frame_time += (uint32_t)(time_inc * 1e6);
+    frame_time = (uint32_t)(timing.at(counter)*1e6);
     edgeflow_total(image_buffer, frame_time);
 
     // Plot results
