@@ -64,9 +64,12 @@ int main(int argc, char *argv[])
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                          configuration_board << "/take" << number_take << "/result_stereo.csv";
 
-  struct cam_state_t cam_state = {NULL};
   //initialize for edgeflow
-  edgeflow_init(128, 94, 0, &cam_state);
+  edgeflow_init(128, 94, 0, NULL);
+
+
+  //Uncomment if you want to try an old version of the code
+  //edgeflow_init(128, 94, 0);
 
   //Open files needed for testing
   VideoCapture cap; cap.open(file_directory_images.str());    //image location
@@ -77,13 +80,18 @@ int main(int argc, char *argv[])
 
   //Make vector with timing data
   double num;
-  string temp_str;
+  string line, temp_str_c1, temp_str_c2;
   vector<double> timing;
-  while (timing_file >> temp_str) {
-    num = (double)atof(temp_str.c_str());
-    if (num != 1.0) {
-      timing.push_back(num);
-    }
+  while (getline(timing_file,line))
+  {
+	  istringstream ss(line);
+	  ss>>temp_str_c1; // read first column
+	  ss>>temp_str_c2; // read second column
+	  if(atof(temp_str_c2.c_str())==1.0) // If second column is not 1, then there is no accommodating image
+	  {
+		  num = (double)atof(temp_str_c1.c_str());
+		  timing.push_back(num);
+	  }
   }
 
   //OPENCV structures to read out images
@@ -147,11 +155,16 @@ int main(int argc, char *argv[])
     //dummyvalues
     int16_t *stereocam_data;
     uint8_t *edgeflowArray;
-
+    edgeflow_params.adapt_horizon = 0;
+    edgeflow_params.derotation = 0;
 
     //calculate edgeflow
     frame_time = (uint32_t)(timing.at(counter) * 1e6);
     edgeflow_total(image_buffer, frame_time);
+
+    //If you want to try an old version of the code
+    // edgeflow_total(image_buffer, frame_time,stereocam_data,0);
+
 
     // Plot results
 #if SHOW_PLOT
@@ -178,9 +191,10 @@ int main(int argc, char *argv[])
 #endif
 
 #if SHOW_IMAGE
-    namedWindow("Display window", WINDOW_AUTOSIZE);  // Create a window for display.
+    namedWindow("Display window", WINDOW_OPENGL);  // Create a window for display.
     imshow("Display window", image_left_gray);
-    std::cin.get();//waitKey(0);
+    waitKey(1);
+    std::cin.get();
 #endif
 
     //calculate mean displacement
