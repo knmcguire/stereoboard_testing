@@ -56,13 +56,13 @@ int main(int argc, char *argv[])
   stringstream file_directory_results;
 
   file_directory_images << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
-                        configuration_board << "/take" << number_take << "/%1d.bmp";
+      configuration_board << "/take" << number_take << "/%1d.bmp";
   file_directory_timing << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
-                        configuration_board << "/take" << number_take << "/timing.dat";
+      configuration_board << "/take" << number_take << "/timing.dat";
   file_directory_calibration << "stereoboard_database/database_stereoboard_" << number_stereoboard <<
-                             "/calibration_data.txt";
+      "/calibration_data.txt";
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
-                         configuration_board << "/take" << number_take << "/result_stereo.csv";
+      configuration_board << "/take" << number_take << "/result_stereo.csv";
 
   //initialize for edgeflow
   edgeflow_init(128, 94, 0, NULL);
@@ -84,14 +84,14 @@ int main(int argc, char *argv[])
   vector<double> timing;
   while (getline(timing_file,line))
   {
-	  istringstream ss(line);
-	  ss>>temp_str_c1; // read first column
-	  ss>>temp_str_c2; // read second column
-	  if(atof(temp_str_c2.c_str())==1.0) // If second column is not 1, then there is no accommodating image
-	  {
-		  num = (double)atof(temp_str_c1.c_str());
-		  timing.push_back(num);
-	  }
+    istringstream ss(line);
+    ss>>temp_str_c1; // read first column
+    ss>>temp_str_c2; // read second column
+    if(atof(temp_str_c2.c_str())==1.0) // If second column is not 1, then there is no accommodating image
+    {
+      num = (double)atof(temp_str_c1.c_str());
+      timing.push_back(num);
+    }
   }
 
   //OPENCV structures to read out images
@@ -155,15 +155,13 @@ int main(int argc, char *argv[])
     //dummyvalues
     int16_t *stereocam_data;
     uint8_t *edgeflowArray;
-    edgeflow_params.adapt_horizon = 0;
-    edgeflow_params.derotation = 0;
 
     //calculate edgeflow
     frame_time = (uint32_t)(timing.at(counter) * 1e6);
     edgeflow_total(image_buffer, frame_time);
 
     //If you want to try an old version of the code
-    // edgeflow_total(image_buffer, frame_time,stereocam_data,0);
+    //edgeflow_total(image_buffer, frame_time,stereocam_data,0);
 
 
     // Plot results
@@ -216,8 +214,8 @@ int main(int argc, char *argv[])
     //Save data on output.cvs
     //TODO: also enter groundtruth data
     output << edgeflow.vel.x << "," << edgeflow.vel.y << "," << edgeflow.vel.z <<
-           "," << edgeflow.vel_x_stereo_avoid_pixelwise << "," << edgeflow.vel_z_stereo_avoid_pixelwise
-           << "," << edgeflow.avg_dist << "," << tot_dist.x << "," << tot_dist.y << "," << tot_dist.z << endl;
+        "," << edgeflow.vel_x_stereo_avoid_pixelwise << "," << edgeflow.vel_z_stereo_avoid_pixelwise
+        << "," << edgeflow.avg_dist << "," << tot_dist.x << "," << tot_dist.y << "," << tot_dist.z << endl;
   }
 
   output.close();
