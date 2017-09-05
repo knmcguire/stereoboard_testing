@@ -30,25 +30,24 @@ Gnuplot g5("lines");
 void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, string title);
 void plot_gnu(int32_t *array, uint16_t size, Gnuplot *g, bool hold_on, string title);
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
 
-	//check if too many arguments are passed
-	if(argc !=3)
-	{
-		cout<<"Wrong amount of arguments!"<<endl;
-		cout<<"Usage: ./testing 'stereoboard_nr' 'take_nr'"<<endl;
-		cout<<"Example: ./testing 1 16"<<endl;
+  //check if too many arguments are passed
+  if (argc != 3) {
+    cout << "Wrong amount of arguments!" << endl;
+    cout << "Usage: ./testing 'stereoboard_nr' 'take_nr'" << endl;
+    cout << "Example: ./testing 1 16" << endl;
 
-        return 0;
-	}
-	cout<<"stereoboard "<<argv[1]<< " with take "<<argv[2]<<endl;
+    return 0;
+  }
+  cout << "stereoboard " << argv[1] << " with take " << argv[2] << endl;
 
-	string configuration_board = "forward_camera";
-	int number_stereoboard = atoi(argv[1]);
-	int number_take = atoi(argv[2]);
+  string configuration_board = "forward_camera";
+  int number_stereoboard = atoi(argv[1]);
+  int number_take = atoi(argv[2]);
 
-	uint32_t frame_time = 0;
+  uint32_t frame_time = 0;
 
   // Find Directories
   stringstream file_directory_images;
@@ -59,7 +58,7 @@ int main(int argc, char* argv[])
   file_directory_images << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
                         configuration_board << "/take" << number_take << "/%1d.bmp";
   file_directory_timing << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
-                         configuration_board << "/take" << number_take << "/timing.dat";
+                        configuration_board << "/take" << number_take << "/timing.dat";
   file_directory_calibration << "stereoboard_database/database_stereoboard_" << number_stereoboard <<
                              "/calibration_data.txt";
   file_directory_results << "stereoboard_database/database_stereoboard_" << number_stereoboard << "/" <<
@@ -67,7 +66,7 @@ int main(int argc, char* argv[])
 
   struct cam_state_t cam_state = {NULL};
   //initialize for edgeflow
-  edgeflow_init(128, 94, 0,&cam_state);
+  edgeflow_init(128, 94, 0, &cam_state);
 
   //Open files needed for testing
   VideoCapture cap; cap.open(file_directory_images.str());    //image location
@@ -80,12 +79,11 @@ int main(int argc, char* argv[])
   double num;
   string temp_str;
   vector<double> timing;
-  while(timing_file>>temp_str){
-	  num = (double)atof(temp_str.c_str());
-	  if(num!=1.0)
-	  {
-		  timing.push_back(num);
-	  }
+  while (timing_file >> temp_str) {
+    num = (double)atof(temp_str.c_str());
+    if (num != 1.0) {
+      timing.push_back(num);
+    }
   }
 
   //OPENCV structures to read out images
@@ -101,11 +99,11 @@ int main(int argc, char* argv[])
   Mat prev_image;
   char prev_image_file[255];
 
-  if (!cap.isOpened()) return -1;
+  if (!cap.isOpened()) { return -1; }
 
   //start loop while images are read
   int counter = 0;
-  for(;;) {
+  for (;;) {
     counter++;
     cap >> image;
 
@@ -126,10 +124,9 @@ int main(int argc, char* argv[])
 
 
     // Put image values in array, just like in the stereoboard
-    int x, y, idx,idx2;
+    int x, y, idx, idx2;
     for (y = 0; y < image_left_gray.rows; y++) {
-      for (x = 0; x < image_left_gray.cols; x++)
-      {
+      for (x = 0; x < image_left_gray.cols; x++) {
         idx2 = image_left_gray.cols * y + x;
 
         image_buffer_left[idx2] = (uint8_t)image_left_gray.at<uchar>(y, x);
@@ -153,7 +150,7 @@ int main(int argc, char* argv[])
 
 
     //calculate edgeflow
-    frame_time = (uint32_t)(timing.at(counter)*1e6);
+    frame_time = (uint32_t)(timing.at(counter) * 1e6);
     edgeflow_total(image_buffer, frame_time);
 
     // Plot results
@@ -168,12 +165,12 @@ int main(int argc, char* argv[])
     plot_gnu(edgeflow.edge_hist[edgeflow.current_frame_nr].x, 128, &g2, false, "edgehist");
     plot_gnu(edgeflow.edge_hist_right, 128, &g2, true, "edgehist_right");
 
-    plot_gnu((int32_t*)edgeflow.disp.confidence_x, 128, &g3, false, "confidence x");
-    plot_gnu((int32_t*)edgeflow.disp.confidence_stereo, 128, &g3, true, "confidence stereo");
+    plot_gnu((int32_t *)edgeflow.disp.confidence_x, 128, &g3, false, "confidence x");
+    plot_gnu((int32_t *)edgeflow.disp.confidence_stereo, 128, &g3, true, "confidence stereo");
 
     plot_gnu(edgeflow.disp.y, 96, &g4, false, "displacement.y");
 
-    plot_gnu((int32_t*)edgeflow.disp.confidence_y, 96, &g5, false, "confidence y");
+    plot_gnu((int32_t *)edgeflow.disp.confidence_y, 96, &g5, false, "confidence y");
 
 #if !SHOW_IMAGE
     getchar();
@@ -197,7 +194,7 @@ int main(int argc, char* argv[])
     int mean_disp_x = 100 * mean_disp_x_temp / 128;
     int mean_disp_stereo = 100 * mean_disp_stereo_temp / 128;
 
-    static struct vec3_t tot_dist = {0,0,0};
+    static struct vec3_t tot_dist = {0, 0, 0};
     tot_dist.x += edgeflow_snapshot.dist_traveled.x;
     tot_dist.y += edgeflow_snapshot.dist_traveled.y;
     tot_dist.z += edgeflow_snapshot.dist_traveled.z;
@@ -205,8 +202,8 @@ int main(int argc, char* argv[])
     //Save data on output.cvs
     //TODO: also enter groundtruth data
     output << edgeflow.vel.x << "," << edgeflow.vel.y << "," << edgeflow.vel.z <<
-	"," << edgeflow.vel_x_stereo_avoid_pixelwise << "," << edgeflow.vel_z_stereo_avoid_pixelwise
-	<< "," << edgeflow.avg_dist << "," << tot_dist.x << "," << tot_dist.y<< "," << tot_dist.z << endl;
+           "," << edgeflow.vel_x_stereo_avoid_pixelwise << "," << edgeflow.vel_z_stereo_avoid_pixelwise
+           << "," << edgeflow.avg_dist << "," << tot_dist.x << "," << tot_dist.y << "," << tot_dist.z << endl;
   }
 
   output.close();
@@ -251,7 +248,7 @@ void plot_line_gnu(double A, double B, uint16_t size, Gnuplot *g, bool hold_on, 
   int x;
   for (x = 0; x < size; x++) {
     X.push_back((double)x);
-    Y.push_back((double)(A * (x-size/2) + B));
+    Y.push_back((double)(A * (x - size / 2) + B));
   }
 
   if (hold_on == false) {
